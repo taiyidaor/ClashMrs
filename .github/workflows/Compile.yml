@@ -1,0 +1,30 @@
+name: Compile MRS
+on:
+  push:
+    paths:
+      - 'Jacking_direct.list'  # 只要你修改了列表，就触发自动编译
+  workflow_dispatch:      # 也可以手动点击运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Mihomo Tool
+        run: |
+          wget -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.0/mihomo-linux-amd64-v1.18.0
+          chmod +x mihomo
+
+      - name: Compile to MRS
+        run: |
+          ./mihomo rule-set convert domain Jacking_direct.list Jacking_direct.mrs
+
+      - name: Upload to Branch
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add Jacking_direct.mrs
+          git commit -m "Auto compile MRS" || exit 0
+          git push
