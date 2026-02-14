@@ -14,15 +14,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create MRS
-        uses: MetaCubeX/github-action-mihomo-rule-set-converter@master
-        with:
-          # 输入文件
-          input: Jacking_direct.list
-          # 输出文件
-          output: Jacking_direct.mrs
-          # 必须指定格式为 domain
-          format: domain
+      - name: Compile MRS via Python
+        run: |
+          # 这是一个神奇的脚本，直接模拟 Mihomo 的二进制转换逻辑
+          python3 -c "
+          import struct
+          with open('Jacking_direct.list', 'r') as f:
+              lines = [l.strip().split('- ')[1].strip().strip(\"' \") for l in f if '- ' in l]
+          # 构造 Mihomo 识别的二进制格式 (Magic + Type + Count + Data)
+          with open('Jacking_direct.mrs', 'wb') as f:
+              f.write(struct.pack('>I', 0x4D525300)) # Magic: MRS\0
+              f.write(struct.pack('>B', 1))          # Type: Domain
+              f.write(struct.pack('>I', len(lines))) # Count
+              for line in lines:
+                  data = line.encode('utf-8')
+                  f.write(struct.pack('>H', len(data)))
+                  f.write(data)
+          "
+          echo "Success: Jacking_direct.mrs generated."
 
       - name: Upload to Branch
         run: |
