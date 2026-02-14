@@ -16,8 +16,8 @@ jobs:
 
       - name: Download Mihomo Tool
         run: |
-          # 直接下载已经解压好的二进制文件，避开 gzip 报错
-          wget -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64
+          # 这一次我们下载最通用的静态编译版，文件名非常固定
+          wget -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9
           chmod +x mihomo
 
       - name: Compile to MRS
