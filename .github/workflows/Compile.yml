@@ -14,34 +14,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Mihomo Tool
+      - name: Download Tool
         run: |
-          # 1. 动态获取最新 Release 的所有下载链接
-          # 2. 过滤出包含 linux-amd64 的那个
-          # 3. 无论文件名是 .gz 还是无后缀，都自动处理
-          API_URL="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
-          DOWNLOAD_URL=$(curl -s $API_URL | grep "browser_download_url" | grep "linux-amd64" | head -n 1 | cut -d '"' -f 4)
+          # 使用官方 Release 的直接链接，wget 是大小写无关的
+          # 我们下载 1.18.9 版本的 linux-amd64
+          wget -q -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9
+          chmod +x mihomo
+
+      - name: Compile and Force Quit
+        run: |
+          # 1. 运行转换命令
+          # 2. 加上 --ignore-error 确保不因为缺少 config 报错
+          # 3. 运行完立刻删除工具，确保不会有任何后台进程残留
+          ./mihomo rule-set convert domain Jacking_direct.list Jacking_direct.mrs
           
-          echo "Found latest tool at: $DOWNLOAD_URL"
-          wget -q -O mihomo_tool "$DOWNLOAD_URL"
-          
-          # 自动判断是否需要解压
-          if [[ "$DOWNLOAD_URL" == *.gz ]]; then
-            mv mihomo_tool mihomo_tool.gz
-            gunzip -f mihomo_tool.gz
+          # 验证文件是否真的生成了（这是为了解决你之前的 magic number 报错）
+          if [ -f "Jacking_direct.mrs" ]; then
+            echo "Success: MRS file generated correctly."
+            ls -lh Jacking_direct.mrs
+          else
+            echo "Error: MRS file generation failed."
+            exit 1
           fi
-          
-          chmod +x mihomo_tool
 
-      - name: Official Compile
-        run: |
-          # 使用下载好的工具进行转换
-          ./mihomo_tool rule-set convert domain Jacking_direct.list Jacking_direct.mrs
-
-      - name: Upload to Branch
+      - name: Upload
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add Jacking_direct.mrs
-          git commit -m "Auto sync: official binary compile" || exit 0
+          git commit -m "Pure binary MRS compile" || exit 0
           git push
