@@ -16,8 +16,11 @@ jobs:
 
       - name: Download Mihomo Tool
         run: |
-          # 这一次我们下载最通用的静态编译版，文件名非常固定
-          wget -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9
+          # 自动获取最新版本的下载链接，不再手动写版本号
+          URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url.*linux-amd64-v" | cut -d '"' -f 4 | head -n 1)
+          echo "Downloading from: $URL"
+          wget -O mihomo.gz "$URL"
+          gunzip mihomo.gz
           chmod +x mihomo
 
       - name: Compile to MRS
