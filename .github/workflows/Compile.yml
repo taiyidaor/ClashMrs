@@ -14,27 +14,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Mihomo Tool
-        run: |
-          URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url.*linux-amd64-v" | cut -d '"' -f 4 | head -n 1)
-          wget -O mihomo.gz "$URL"
-          gunzip mihomo.gz
-          chmod +x mihomo
-
-      - name: Compile to MRS
-        run: |
-          # 核心暴力逻辑：后台运行转换命令，等待 5 秒让它完成转换，然后强制杀掉它
-          ./mihomo rule-set convert domain Jacking_direct.list Jacking_direct.mrs &
-          sleep 5
-          killall mihomo || true
-          # 检查成果
-          if [ -f "Jacking_direct.mrs" ]; then
-            echo "Success: MRS file generated."
-            ls -lh Jacking_direct.mrs
-          else
-            echo "Error: MRS file not found."
-            exit 1
-          fi
+      - name: Create MRS
+        uses: MetaCubeX/github-action-mihomo-rule-set-converter@master
+        with:
+          # 输入文件
+          input: Jacking_direct.list
+          # 输出文件
+          output: Jacking_direct.mrs
+          # 必须指定格式为 domain
+          format: domain
 
       - name: Upload to Branch
         run: |
