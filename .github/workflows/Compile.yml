@@ -14,29 +14,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compile MRS via Python
+      - name: Download Mihomo Tool
         run: |
-          # 这是一个神奇的脚本，直接模拟 Mihomo 的二进制转换逻辑
-          python3 -c "
-          import struct
-          with open('Jacking_direct.list', 'r') as f:
-              lines = [l.strip().split('- ')[1].strip().strip(\"' \") for l in f if '- ' in l]
-          # 构造 Mihomo 识别的二进制格式 (Magic + Type + Count + Data)
-          with open('Jacking_direct.mrs', 'wb') as f:
-              f.write(struct.pack('>I', 0x4D525300)) # Magic: MRS\0
-              f.write(struct.pack('>B', 1))          # Type: Domain
-              f.write(struct.pack('>I', len(lines))) # Count
-              for line in lines:
-                  data = line.encode('utf-8')
-                  f.write(struct.pack('>H', len(data)))
-                  f.write(data)
-          "
-          echo "Success: Jacking_direct.mrs generated."
+          # 1. 动态获取最新 Release 的所有下载链接
+          # 2. 过滤出包含 linux-amd64 的那个
+          # 3. 无论文件名是 .gz 还是无后缀，都自动处理
+          API_URL="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
+          DOWNLOAD_URL=$(curl -s $API_URL | grep "browser_download_url" | grep "linux-amd64" | head -n 1 | cut -d '"' -f 4)
+          
+          echo "Found latest tool at: $DOWNLOAD_URL"
+          wget -q -O mihomo_tool "$DOWNLOAD_URL"
+          
+          # 自动判断是否需要解压
+          if [[ "$DOWNLOAD_URL" == *.gz ]]; then
+            mv mihomo_tool mihomo_tool.gz
+            gunzip -f mihomo_tool.gz
+          fi
+          
+          chmod +x mihomo_tool
+
+      - name: Official Compile
+        run: |
+          # 使用下载好的工具进行转换
+          ./mihomo_tool rule-set convert domain Jacking_direct.list Jacking_direct.mrs
 
       - name: Upload to Branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add Jacking_direct.mrs
-          git commit -m "Auto compile MRS" || exit 0
+          git commit -m "Auto sync: official binary compile" || exit 0
           git push
