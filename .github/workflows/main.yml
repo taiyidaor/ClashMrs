@@ -1,4 +1,4 @@
-name: Compile MRS
+name: Compile Rules
 on:
   push:
     paths:
@@ -14,19 +14,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Mihomo Tool
+      - name: Generate YAML Rule
         run: |
-          wget -O mihomo https://github.com/MetaCubeX/mihomo/releases/download/v1.18.0/mihomo-linux-amd64-v1.18.0
-          chmod +x mihomo
-
-      - name: Compile to MRS
+          echo "payload:" > Jacking_direct.yaml
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == "#"* ]] && continue
+            domain=$(echo "$line" | sed 's/^- //g' | tr -d "'\" ")
+            echo "  - '$domain'" >> Jacking_direct.yaml
+          done < Jacking_direct.list
+          
+      - name: Upload
         run: |
-          ./mihomo rule-set convert domain Jacking_direct.list Jacking_direct.mrs
-
-      - name: Upload to Branch
-        run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add Jacking_direct.mrs
-          git commit -m "Auto compile MRS" || exit 0
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add Jacking_direct.yaml
+          git commit -m "Switch to YAML format" || exit 0
           git push
